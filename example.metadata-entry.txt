@@ -1,0 +1,24 @@
+used[A:D,] = TRUE # comments are allowed
+used[E:H,1:6] = TRUE
+used[E:H,7:12] = FALSE
+
+technician[A:D,1:6] = "sonia"
+technician[E:H,1:6] = "eric"
+technician[A:D,7:12] = "matteo"
+
+substrate[A:D,] = "SHaPrP90-231"
+substrate[E:H,1:6] = "SHaPrP90-231"
+
+seed[,c(1,7,9,11)] = "NBH"
+seed[,c(2:6,8,10,12)] = "263K"
+
+comments[A:D,7:8] = "matteo dilutions?"
+comments[A:D,9:10] = "sonia dilutions?"
+comments[A:D,11:12] = "eric dilutions?"
+
+dilution[,1] = 5e-5
+dilution[,2] = 5e-5
+dilution[,3] = 5e-6
+dilution[,4] = 5e-7
+dilution[,5] = 5e-8
+dilution[,6] = 5e-9
