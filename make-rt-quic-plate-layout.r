@@ -64,16 +64,16 @@ bottom_offset = 4
 within_offset = -.5
 variable_cols = c()
 for (metaval in colnames(metadata)[c(-1,-2)]) {
-  nvals = length(unique(metadata[,metaval]))
+  nvals = length(unique(metadata[metadata$used,metaval]))
   # for things that are invariant, print at the bottom and move on
   if (nvals == 1) {
-    string_to_print = paste(metaval,": ",unique(metadata[,metaval]),sep="")
+    string_to_print = paste(metaval,": ",unique(metadata[metadata$used,metaval]),sep="")
     mtext(side=1,adj=0,padj=bottom_offset,text=string_to_print)
     bottom_offset = bottom_offset + 1.5
   }
   if (nvals > 1) {
-    for (tablerow in 1:dim(metadata)[1]) {
-      textwell(metadata$wellname[tablerow],metadata[tablerow,metaval],cex=.6,pos=1,offset=within_offset)
+    for (tablerow in which(metadata$used)) {
+      textwell(metadata$wellname[tablerow],metadata[tablerow,metaval],cex=.5,pos=1,offset=within_offset)
     }
     within_offset = within_offset + .5
     variable_cols = c(variable_cols,metaval) # later i want to handle these more intelligently
