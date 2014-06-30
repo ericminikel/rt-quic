@@ -44,10 +44,8 @@ rowname = matrix(rep(c("A","B","C","D","E","F","G","H"),12),nrow=8)
 colname = matrix(rep(1:12,each=8),nrow=8)
 wellname = matrix(paste(rowname,colname,sep=""),nrow=8)
 
-src = "~/d/sci/src/rt-quic/example.metadata-entry.txt"
-
 # read commands from a file to create metadata
-commands = read.table(src,comment.char="#",flush=TRUE)
+commands = read.table(entryfile,comment.char="#",flush=TRUE)
 colnames(commands) = c("var","equals","value")
 # get a list of all metadata variables the user wants
 metadata_vars = unique(gsub("\\[","",str_extract(commands$var,".*\\[")))
@@ -56,7 +54,7 @@ for (metadata_var in metadata_vars) {
     assign(metadata_var,matrix(nrow=8,ncol=12))
 }
 # now execute the slice assignments in the script
-source(src)
+source(entryfile)
 
 
 # transpose the matrices (since platereaders output data sorted by row, then column)
