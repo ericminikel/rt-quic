@@ -12,9 +12,9 @@ substrate[E:H,1:6] = "SHaPrP90-231"
 seed[,c(1,7,9,11)] = "NBH"
 seed[,c(2:6,8,10,12)] = "263K"
 
-comments[A:D,7:8] = "matteo dilutions?"
-comments[A:D,9:10] = "sonia dilutions?"
-comments[A:D,11:12] = "eric dilutions?"
+comments[A:D,7:8] = "dilution series 1"
+comments[A:D,9:10] = "dilution series 2"
+comments[A:D,11:12] = "dilution series 3"
 
 dilution[,1] = 5e-5
 dilution[,2] = 5e-5
