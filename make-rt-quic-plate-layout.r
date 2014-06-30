@@ -1,4 +1,4 @@
-# plot plate layouts
+# this script is to plot plate layouts
 
 siteroot = "~/d/j/cureffilab"
 
@@ -69,13 +69,14 @@ for (metaval in colnames(metadata)[c(-1,-2)]) {
   if (nvals == 1) {
     string_to_print = paste(metaval,": ",unique(metadata[metadata$used,metaval]),sep="")
     mtext(side=1,adj=0,padj=bottom_offset,text=string_to_print)
-    bottom_offset = bottom_offset + 1.5
+    bottom_offset = bottom_offset + 1.5 # move down a line for the next line of text
   }
+  # for things that are variable, write the value in each well
   if (nvals > 1) {
     for (tablerow in which(metadata$used)) {
       textwell(metadata$wellname[tablerow],metadata[tablerow,metaval],cex=.5,pos=1,offset=within_offset)
     }
-    within_offset = within_offset + .5
+    within_offset = within_offset + .5 # move down a line for the next line of text
     variable_cols = c(variable_cols,metaval) # later i want to handle these more intelligently
   }
 }
