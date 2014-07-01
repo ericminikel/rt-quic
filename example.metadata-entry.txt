@@ -1,4 +1,4 @@
-used[A:D,] = TRUE # comments are allowed
+used[A:D,] = TRUE
 used[E:H,1:6] = TRUE
 used[E:H,7:12] = FALSE
 
@@ -22,3 +22,4 @@ dilution[,3] = 5e-6
 dilution[,4] = 5e-7
 dilution[,5] = 5e-8
 dilution[,6] = 5e-9
+dilution[,7:12] = 5e-5 # matteo only tested 5e-5 dilutions
