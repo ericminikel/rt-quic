@@ -16,7 +16,7 @@ master_mix_planner = function (
     well_volume = 100, # uM
     bh_volume = 2 # uM
     ) {
-    pbs_nacl = 170 # concentration of NaCl in PBS in mM
+    pbs_nacl = 130 # concentration of NaCl in PBS in mM
     fudge_factor = 1 + excess
     vol_total = (well_volume - bh_volume) * n_wells * fudge_factor
     vol_pbs  = vol_total * final_pbs / input_pbs
