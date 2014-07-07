@@ -15,23 +15,27 @@ option_list = list(
               type='character', help="Path to metadata file"),
   make_option(c("-q", "--rtquicno"), action="store", default='',
               type='character', help="RT-QuIC plate number"),
-  make_option(c("-o", "--outdir"), action="store", default='',
+  make_option(c("-o", "--outdir"), action="store", default=NULL,
               type='character', help="Path to save images"),
   make_option(c("-p", "--plotby"), action="store", default='',
               type='character', help="Variables by which to separate plots"),
-  make_option(c("-c", "--curveby"), action="store", default='',
+  make_option(c("-c", "--curveby"), action="store", default=NULL,
               type='character', help="Variables by which to separate curves"),
   make_option(c("-k", "--colorby"), action="store", default='',
-              type='character', help="Variable by which to vary darkness of color")
+              type='character', help="Variable by which to vary darkness of color"),
+  make_option(c("-n", "--normalize"), action="store_true", default=FALSE,
+              help="Normalize fluorescence data on a 0 to 1 scale [default %default]")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
 # uncomment this for debugging in interactive mode:
-opt = data.frame(rtquicno="rtq00001",
-                 outdir="~/d/sci/src/rt-quic/",
-                 plotby="technician",
-                 #curveby=c("seed","dilution","comments"),
-                 colorby="dilution")
+# opt = data.frame(rtquicno="rtq00002",
+#                  outdir="~/d/sci/src/rt-quic/",
+#                  plotby="compound",
+#                  colorby="dilution",
+#                  normalize=TRUE)
+
+print(opt)
 
 if (opt$rtquicno=="") {
   metafile = opt$metafile
@@ -57,15 +61,18 @@ if (is.null(opt$curveby)) {
 } else {
   input_curveby = strsplit(opt$curveby,",")[[1]]
 }
+if (opt$normalize) {
+  normalize = TRUE
+} else {
+  normalize = FALSE
+}
 
-
-data = read.table(datafile,skip=5,header=TRUE,sep=',')
+# unfortunately the input data have a variable number of header lines
+# so first, figure out how many lines to skip in the header of the CSV
+lines_to_skip = grep("Well Row,Well Col",readLines(datafile))-1
+# then read in the data and metadata
+data = read.table(datafile,skip=lines_to_skip,header=TRUE,sep=',')
 metadata=read.table(metafile,sep="\t",header=TRUE)
-
-
-# data = read.table("~/d/j/cureffilab/data/rtq/rtq00001.csv",skip=5,header=TRUE,sep=',')
-# metadata=read.table("~/d/j/cureffilab/data/rtq/rtq00001.metadata.txt",sep="\t",header=TRUE)
-
 
 # extract timepoints in minutes from column names
 extract_timepoints = function(column_names) {
@@ -89,7 +96,12 @@ extract_timepoints = function(column_names) {
 # convert numerical portion of the data to a matrix
 mat = as.matrix(data[4:(dim(data)[2]-1)])
 # normalize the matrix
-mat = (mat - min(mat)) / (max(mat) - min(mat))
+if (normalize) {
+  mat = (mat - min(mat)) / (max(mat) - min(mat)) 
+  ylims = c(0,1)
+} else {
+  ylims = range(mat)
+}
 
 # get the timepoints for the x axis
 timepts = extract_timepoints(colnames(mat))
@@ -112,10 +124,10 @@ if (length(plotby) > 1) {
 for (current_plotbyval in unique(plotbyval[metadata$used])) {
   legend = data.frame(name=character(),color=character())
   pngname = paste(pngbase,"-",gsub(" ","-",current_plotbyval),".png",sep="")
-  list_of_attributes = paste(plotby,": ",unique(metadata[metadata$used & plotbyval==current_plotbyval,plotby]),collapse="\n")
+  list_of_attributes = paste(plotby,": ",unique(metadata[metadata$used & plotbyval==current_plotbyval,plotby]),collapse="\n",sep="")
   main = paste(pngbase,"\n",list_of_attributes,sep="")
   png(paste(outdir,pngname,sep=""),width=600,height=450)
-  plot(NA,NA,xlim=range(timepts_h),ylim=c(0,1),
+  plot(NA,NA,xlim=range(timepts_h),ylim=ylims,
        xlab='Timepoint', ylab='Relative ThT fluorescence units',
        main=main)
   # within the data to be plotted, any metadata cols which are polymorphic must be 
@@ -132,7 +144,11 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
     curveby = input_curveby
   }
   # just create a "curvename" vector for all rows of the metadata table, even though only some being plotted
-  curvename = do.call(paste,metadata[,curveby])
+  if (length(curveby) > 1) {
+    curvename = do.call(paste,metadata[,curveby])
+  } else {
+    curvename = metadata[,curveby]
+  }
   #curvenames = unique(do.call(paste,metadata[metadata$used & metadata[,plotby] == plotbyval,curveby]))#[metadata$used & metadata[,plotby]==plotbyval])
   for (current_curvename in unique(curvename[metadata$used & plotbyval == current_plotbyval])) {
     # figure out which rows to average for this curve
