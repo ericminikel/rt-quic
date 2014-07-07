@@ -17,16 +17,16 @@ option_list = list(
               type='character', help="RT-QuIC plate number"),
   make_option(c("-o", "--outdir"), action="store", default='',
               type='character', help="Path to save images"),
-  make_option(c("-p", "--plotby"), action="store", nargs='?', default='',
+  make_option(c("-p", "--plotby"), action="store", default='',
               type='character', help="Variables by which to separate plots"),
-  make_option(c("-c", "--curveby"), action="store", nargs='?', default='',
+  make_option(c("-c", "--curveby"), action="store", default='',
               type='character', help="Variables by which to separate curves"),
   make_option(c("-k", "--colorby"), action="store", default='',
               type='character', help="Variable by which to vary darkness of color")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
-# uncomment this line for debugging in interactive mode:
+# uncomment this for debugging in interactive mode:
 opt = data.frame(rtquicno="rtq00001",
                  outdir="~/d/sci/src/rt-quic/",
                  plotby="technician",
@@ -37,21 +37,31 @@ if (opt$rtquicno=="") {
   metafile = opt$metafile
   pngbase = opt$metafile
   datafile = opt$datafile
-  outdir = opt$outdir
-  colorby = opt$colorby
 } else {
   pngbase = opt$rtquicno
   metafile = paste(siteroot,"/data/rtq/",opt$rtquicno,".metadata.txt",sep="")
   datafile = paste(siteroot,"/data/rtq/",opt$rtquicno,".csv",sep="")
-  if (is.null(opt$outdir)) {
-    curr_year  = format(Sys.Date(),"%Y")
-    curr_month = format(Sys.Date(),"%m")
-    outdir = paste(siteroot,"/media/",curr_year,"/",curr_month,"/",sep="")
-  }
-  colorby = opt$colorby
 }
+# use the current month's media directory if not otherwise specified
+if (is.null(opt$outdir)) {
+  curr_year  = format(Sys.Date(),"%Y")
+  curr_month = format(Sys.Date(),"%m")
+  outdir = paste(siteroot,"/media/",curr_year,"/",curr_month,"/",sep="")
+} else {
+  outdir = opt$outdir
+}
+colorby = opt$colorby
+plotby = split(opt$plotby,",")[[1]]
+if (is.null(opt$curveby)) {
+  input_curveby = NULL
+} else {
+  input_curveby = strsplit(opt$curveby,",")[[1]]
+}
+
+
 data = read.table(datafile,skip=5,header=TRUE,sep=',')
 metadata=read.table(metafile,sep="\t",header=TRUE)
+
 
 # data = read.table("~/d/j/cureffilab/data/rtq/rtq00001.csv",skip=5,header=TRUE,sep=',')
 # metadata=read.table("~/d/j/cureffilab/data/rtq/rtq00001.metadata.txt",sep="\t",header=TRUE)
@@ -85,25 +95,24 @@ mat = (mat - min(mat)) / (max(mat) - min(mat))
 timepts = extract_timepoints(colnames(mat))
 timepts_h = timepts/60
 
-colorby="dilution"
 # figure out grayscale levels for serial dilutions
 dil_log10 = -log10(metadata[,colorby])
 dil_range = range(dil_log10,na.rm=TRUE)
 desired_range = c(0,255*.8) # dilution colors will range from #000 to #CCC
 graylevel = round((dil_log10 - min(dil_range))/max(dil_range) * (max(desired_range) - min(desired_range)))
 
-metadata$tech2 = metadata$technician
-plotby = c("technician","tech2")
-curveby = c("dilution","comments")
-
 # columns for which separate curves should never be plotted
 nevercurveby = c("wellname","used")
 
-plotbyval = do.call(paste,metadata[,plotby])
+if (length(plotby) > 1) {
+  plotbyval = do.call(paste,metadata[,plotby])
+} else {
+  plotbyval = metadata[,plotby]
+}
 for (current_plotbyval in unique(plotbyval[metadata$used])) {
   legend = data.frame(name=character(),color=character())
   pngname = paste(pngbase,"-",gsub(" ","-",current_plotbyval),".png",sep="")
-  list_of_attributes = paste(plotby,": ",unique(metadata[plotbyval==current_plotbyval,plotby]),collapse="\n")
+  list_of_attributes = paste(plotby,": ",unique(metadata[metadata$used & plotbyval==current_plotbyval,plotby]),collapse="\n")
   main = paste(pngbase,"\n",list_of_attributes,sep="")
   png(paste(outdir,pngname,sep=""),width=600,height=450)
   plot(NA,NA,xlim=range(timepts_h),ylim=c(0,1),
@@ -111,7 +120,7 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
        main=main)
   # within the data to be plotted, any metadata cols which are polymorphic must be 
   # separate curves, unless otherwise specified by user
-  if (is.null(opt$curveby)) {
+  if (is.null(input_curveby)) {
     curveby = c() 
     for (colno in 1:dim(metadata)[2]) {
       n_unique_vals = length(unique(metadata[metadata$used & plotbyval == current_plotbyval,colno]))
@@ -120,7 +129,7 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
       }
     }
   } else {
-    curveby = opt$curveby
+    curveby = input_curveby
   }
   # just create a "curvename" vector for all rows of the metadata table, even though only some being plotted
   curvename = do.call(paste,metadata[,curveby])
