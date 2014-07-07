@@ -35,7 +35,6 @@ opt = parse_args(OptionParser(option_list=option_list))
 #                  colorby="dilution",
 #                  normalize=TRUE)
 
-print(opt)
 
 if (opt$rtquicno=="") {
   metafile = opt$metafile
@@ -123,7 +122,7 @@ if (length(plotby) > 1) {
 }
 for (current_plotbyval in unique(plotbyval[metadata$used])) {
   legend = data.frame(name=character(),color=character())
-  pngname = paste(pngbase,"-",gsub(" ","-",current_plotbyval),".png",sep="")
+  pngname = gsub("[/ ]","-",paste(pngbase,"-",current_plotbyval,".png",sep=""))
   list_of_attributes = paste(plotby,": ",unique(metadata[metadata$used & plotbyval==current_plotbyval,plotby]),collapse="\n",sep="")
   main = paste(pngbase,"\n",list_of_attributes,sep="")
   png(paste(outdir,pngname,sep=""),width=600,height=450)
@@ -172,7 +171,7 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
 #    text(timepts[length(timepts)],curvedata[length(curvedata)],label=curve,col=color,pos=4,cex=.8)
     legend = rbind(legend,cbind(current_curvename,curve_hexcolor))
   }
-  legend('bottomright',legend[,1],col=legend[,2],lwd=2)
+  legend('topleft',legend[,1],col=legend[,2],lwd=2)
   dev.off()
 }
 
