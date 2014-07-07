@@ -1,10 +1,51 @@
+
 options(stringsAsFactors=FALSE)
-require(stringr)
 
-data = read.table("~/d/j/cureffilab/data/rtq/rtq00001.csv",skip=5,header=TRUE,sep=',')
-metadata=read.table("~/d/j/cureffilab/data/rtq/rtq00001.metadata.txt",sep="\t",header=TRUE)
 
-dynrange = c(0,260000)
+siteroot = "~/d/j/cureffilab"
+
+suppressPackageStartupMessages(require(optparse)) # http://cran.r-project.org/web/packages/optparse/optparse.pdf
+suppressPackageStartupMessages(require(stringr))
+options(stringsAsFactors=FALSE) 
+
+option_list = list(
+  make_option(c("-d", "--datafile"), action="store", default='', 
+              type='character', help="Path to CSV of platereader data"),
+  make_option(c("-m", "--metafile"), action="store", default='',
+              type='character', help="Path to metadata file"),
+  make_option(c("-q", "--rtquicno"), action="store", default='',
+              type='character', help="RT-QuIC plate number"),
+  make_option(c("-o", "--outdir"), action="store", default='',
+              type='character', help="Path to save images"),
+  make_option(c("-p", "--plotby"), action="store", nargs='?', default='',
+              type='character', help="Variables by which to separate plots")
+)
+opt = parse_args(OptionParser(option_list=option_list))
+
+# uncomment this line for debugging in interactive mode:
+opt = data.frame(rtquicno="rtq00001",outdir="~/d/sci/src/rt-quic/",plotby="technician")
+
+if (opt$rtquicno=="") {
+  metafile = opt$metafile
+  pngbase = opt$metafile
+  datafile = opt$datafile
+  outdir = opt$outdir
+} else {
+  pngbase = opt$rtquicno
+  metafile = paste(siteroot,"/data/rtq/",opt$rtquicno,".metadata.txt",sep="")
+  datafile = paste(siteroot,"/data/rtq/",opt$rtquicno,".csv",sep="")
+  if (is.na(opt$outdir)) {
+    curr_year  = format(Sys.Date(),"%Y")
+    curr_month = format(Sys.Date(),"%m")
+    outdir = paste(siteroot,"/media/",curr_year,"/",curr_month,"/",sep="")
+  }
+}
+data = read.table(datafile,skip=5,header=TRUE,sep=',')
+metadata=read.table(metafile,sep="\t",header=TRUE)
+
+# data = read.table("~/d/j/cureffilab/data/rtq/rtq00001.csv",skip=5,header=TRUE,sep=',')
+# metadata=read.table("~/d/j/cureffilab/data/rtq/rtq00001.metadata.txt",sep="\t",header=TRUE)
+
 
 # extract timepoints in minutes from column names
 extract_timepoints = function(column_names) {
@@ -25,13 +66,7 @@ extract_timepoints = function(column_names) {
   return (timepts)
 }
 
-get_dilution_color = function(dilution) {
-  log_dilution = -log10(as.numeric(dilution))
-  color_add_value = round(log_dilution*10)
-  hexcolor = paste("#",paste(rep(as.character(as.hexmode(color_add_value)),3),collapse=""),sep="")
-  return (hexcolor)
-}
-
+# convert numerical portion of the data to a matrix
 mat = as.matrix(data[4:(dim(data)[2]-1)])
 # normalize the matrix
 mat = (mat - min(mat)) / (max(mat) - min(mat))
@@ -40,6 +75,7 @@ mat = (mat - min(mat)) / (max(mat) - min(mat))
 timepts = extract_timepoints(colnames(mat))
 timepts_h = timepts/60
 
+# figure out grayscale levels for serial dilutions
 metadata$dil_log10 = -log10(metadata$dilution)
 dil_range = range(metadata$dil_log10,na.rm=TRUE)
 desired_range = c(0,255*.8) # dilution colors will range from #000 to #CCC
@@ -48,10 +84,12 @@ metadata$graylevel = round((metadata$dil_log10 - min(dil_range))/max(dil_range) 
 plotby = "technician"
 curveby = c("seed","dilution","comments")
 
-plotbyval="matteo"
-metadata$curve = do.call(paste,metadata[,curveby])
-legend = data.frame(name=character(),color=character())
+plotbyval="eric"
+metadata$curve = do.call(paste,metadata[,curveby]) 
 for (plotbyval in unique(metadata[metadata$used,plotby])) {
+  legend = data.frame(name=character(),color=character())
+  pngname = paste(pngbase,"-",plotbyval,".png",sep="")
+  png(paste(outdir,pngname,sep=""),width=600,height=450)
   plot(NA,NA,xlim=range(timepts_h),ylim=c(0,1),
        xlab='Timepoint', ylab='Relative ThT fluorescence units',
        main=paste('rtq00001',plotbyval,sep="-"))
@@ -80,8 +118,9 @@ for (plotbyval in unique(metadata[metadata$used,plotby])) {
 #    text(timepts[length(timepts)],curvedata[length(curvedata)],label=curve,col=color,pos=4,cex=.8)
     legend = rbind(legend,cbind(curvename,curve_hexcolor))
   }
+  legend('bottomright',legend[,1],col=legend[,2],lwd=2)
+  dev.off()
 }
-legend('bottomright',legend[,1],col=legend[,2],lwd=2)
 
 
 
