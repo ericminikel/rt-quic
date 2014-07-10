@@ -6,7 +6,6 @@ siteroot = "~/d/j/cureffilab"
 
 suppressPackageStartupMessages(require(optparse)) # http://cran.r-project.org/web/packages/optparse/optparse.pdf
 suppressPackageStartupMessages(require(stringr))
-options(stringsAsFactors=FALSE) 
 
 option_list = list(
   make_option(c("-d", "--datafile"), action="store", default='', 
@@ -24,16 +23,19 @@ option_list = list(
   make_option(c("-k", "--colorby"), action="store", default='',
               type='character', help="Variable by which to vary darkness of color"),
   make_option(c("-n", "--normalize"), action="store_true", default=FALSE,
-              help="Normalize fluorescence data on a 0 to 1 scale [default %default]")
+              help="Normalize fluorescence data on a 0 to 1 scale [default %default]"),
+  make_option(c("-l", "--location"), action="store", default='topleft',
+              type='character', help="Location of legend on plot")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
 # uncomment this for debugging in interactive mode:
-# opt = data.frame(rtquicno="rtq00002",
+# opt = data.frame(rtquicno="rtq00001",
 #                  outdir="~/d/sci/src/rt-quic/",
 #                  plotby="compound",
 #                  colorby="dilution",
-#                  normalize=TRUE)
+#                  normalize=TRUE,
+#                  location="topleft")
 
 
 if (opt$rtquicno=="") {
@@ -109,8 +111,10 @@ timepts_h = timepts/60
 # figure out grayscale levels for serial dilutions
 dil_log10 = -log10(metadata[,colorby])
 dil_range = range(dil_log10,na.rm=TRUE)
-desired_range = c(0,255*.8) # dilution colors will range from #000 to #CCC
-graylevel = round((dil_log10 - min(dil_range))/max(dil_range) * (max(desired_range) - min(desired_range)))
+desired_range_gray = c(0,255*.8) # dilution colors will range from #000 to #CCC
+desired_range_cex = c(.3,1)
+graylevel = round((dil_log10 - min(dil_range))/(max(dil_range) - min(dil_range)) * (max(desired_range_gray) - min(desired_range_gray)))
+cexlevel = (dil_log10 - min(dil_range))/(max(dil_range) - min(dil_range))* (max(desired_range_cex) - min(desired_range_cex)) + min(desired_range_cex)
 
 # columns for which separate curves should never be plotted
 nevercurveby = c("wellname","used")
@@ -171,7 +175,7 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
 #    text(timepts[length(timepts)],curvedata[length(curvedata)],label=curve,col=color,pos=4,cex=.8)
     legend = rbind(legend,cbind(current_curvename,curve_hexcolor))
   }
-  legend('topleft',legend[,1],col=legend[,2],lwd=2)
+  legend(opt$location,legend[,1],col=legend[,2],lwd=2)
   dev.off()
 }
 
