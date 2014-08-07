@@ -73,6 +73,7 @@ if (opt$normalize) {
   normalize = FALSE
 }
 
+
 # unfortunately the input data have a variable number of header lines
 # so first, figure out how many lines to skip in the header of the CSV
 lines_to_skip = grep("Well Row,Well Col",readLines(datafile))-1
@@ -137,6 +138,10 @@ if (colorby == "") {
   getcolor = function(userows) {
     colorbyval = unique(metadata[userows,colorby])
     current_color = colormap[[colorbyval]]
+    if (is.null(current_color)) {
+      warning(paste("Using default color of #000000 for",colorbyval))
+      current_color = '#000000'
+    }
     return (current_color)
   }
 }
@@ -164,11 +169,20 @@ fadecolor = function(hexcolor, fadeamount) {
 }
 
 # figure out grayscale levels for serial dilutions
-dil_log10 = -log10(metadata[,fadeby])
+fadebyvals = metadata[,fadeby]
+# if the data contain 0 or negatives, assign these a -log10 value 20% higher than the highest finite value.
+well_behaved_range = range(fadebyvals[fadebyvals > 0])
+well_behaved_logrange = -log10(well_behaved_range)
+dil_log10 = -log10(fadebyvals)
+dil_log10[fadebyvals <= 0] = max(well_behaved_logrange) + .2*(max(well_behaved_logrange) - min(well_behaved_logrange))
 dil_range = range(dil_log10,na.rm=TRUE)
 desired_range_gray = c(0,.8) # never fade more than 80%, for legibility
-desired_range_cex = c(.3,1)
 graylevel = (dil_log10 - min(dil_range))/(max(dil_range) - min(dil_range)) * (max(desired_range_gray) - min(desired_range_gray))
+# fill NA with zero - for instance, an unseeded well might have dilution = NA, just plot this with no fade
+graylevel[is.na(graylevel)] = 0
+
+
+desired_range_cex = c(.3,1)
 cexlevel = (dil_log10 - min(dil_range))/(max(dil_range) - min(dil_range))* (max(desired_range_cex) - min(desired_range_cex)) + min(desired_range_cex)
 
 # columns for which separate curves should never be plotted
@@ -223,9 +237,7 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
 #    text(timepts[length(timepts)],curvedata[length(curvedata)],label=curve,col=color,pos=4,cex=.8)
     legend = rbind(legend,cbind(current_curvename,curve_hexcolor))
   }
-  legend(opt$location,legend[,1],col=legend[,2],lwd=2)
+  legend(opt$location,legend[,1],col=legend[,2],lwd=2,title=curveby)
   dev.off()
 }
-
-
 
