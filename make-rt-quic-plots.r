@@ -20,12 +20,16 @@ option_list = list(
               type='character', help="Variables by which to separate plots"),
   make_option(c("-c", "--curveby"), action="store", default=NULL,
               type='character', help="Variables by which to separate curves"),
-  make_option(c("-k", "--colorby"), action="store", default='',
+  make_option(c("-f", "--fadeby"), action="store", default='',
               type='character', help="Variable by which to vary darkness of color"),
   make_option(c("-n", "--normalize"), action="store_true", default=FALSE,
               help="Normalize fluorescence data on a 0 to 1 scale [default %default]"),
   make_option(c("-l", "--location"), action="store", default='topleft',
-              type='character', help="Location of legend on plot")
+              type='character', help="Location of legend on plot"),
+  make_option(c("-k", "--colorby"), action="store", default="",
+              type='character', help="Variable by which to vary base color"),
+  make_option(c("-j", "--colormap"), action="store", default="#000000",
+              type='character', help="Mapping scheme for colors")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
@@ -33,7 +37,7 @@ opt = parse_args(OptionParser(option_list=option_list))
 # opt = data.frame(rtquicno="rtq00001",
 #                  outdir="~/d/sci/src/rt-quic/",
 #                  plotby="compound",
-#                  colorby="dilution",
+#                  fadeby="dilution",
 #                  normalize=TRUE,
 #                  location="topleft")
 
@@ -56,7 +60,8 @@ if (is.null(opt$outdir)) {
   outdir = opt$outdir
 }
 colorby = opt$colorby
-plotby = split(opt$plotby,",")[[1]]
+fadeby = opt$fadeby
+plotby = strsplit(opt$plotby,",")[[1]]
 if (is.null(opt$curveby)) {
   input_curveby = NULL
 } else {
@@ -108,8 +113,19 @@ if (normalize) {
 timepts = extract_timepoints(colnames(mat))
 timepts_h = timepts/60
 
+# figure out color scheme
+# this is implemented by creating a function that accepts a set of rows and returns a color for them
+# if no colorby variable, then all one color.
+if (colorby == "") {
+  getcolor = function(userows) {
+    return (opt$colormap)
+  }
+} else { # if a colorby variable, then parse the color mapping
+  #colorbyvals = unique(metadata[used,colorby])
+}
+
 # figure out grayscale levels for serial dilutions
-dil_log10 = -log10(metadata[,colorby])
+dil_log10 = -log10(metadata[,fadeby])
 dil_range = range(dil_log10,na.rm=TRUE)
 desired_range_gray = c(0,255*.8) # dilution colors will range from #000 to #CCC
 desired_range_cex = c(.3,1)
@@ -159,10 +175,10 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
     # calculate the y values by averaging those rows
     yvals = colMeans(mat[userows,])
     # figure out what color to plot
-    current_seed = unique(metadata$seed[userows])
+    current_colorbyval = unique(metadata[userows,colorby])
     # figure out what dilution this is
     current_graylevel = unique(graylevel[userows])
-    if (current_seed=="NBH") {
+    if (current_colorbyval=="NBH") {
       curve_hexcolor = "#00CC00" # green
 #      rgb_multiplier = c(0,1,0) # green scale
     } else {
