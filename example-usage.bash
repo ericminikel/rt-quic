@@ -5,4 +5,4 @@ diff example.metadata.txt example.metadata.correct.txt
 # make a graphic of the platefile
 Rscript make-rt-quic-plate-layout.r -m example.metadata.txt -p example.png
 # make plots
-Rscript make-rt-quic-plots.r -p technician -f dilution -q rtq00001
+Rscript make-rt-quic-plots.r -p technician -f dilution -q rtq00001 -k seed -j NBH:#00CC00,263K:#000000

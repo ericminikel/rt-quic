@@ -121,15 +121,54 @@ if (colorby == "") {
     return (opt$colormap)
   }
 } else { # if a colorby variable, then parse the color mapping
-  #colorbyvals = unique(metadata[used,colorby])
+  # get set of unique values of the colorby variable. ideally these should all have a mapping.
+  # later can add checks to make sure this is the case.
+  colorbyvals = unique(metadata[metadata$used,colorby])
+  # original string should say for instance "NBH:#00CC00,RML:#000000"
+  colortuples = strsplit(opt$colormap,',')[[1]] # split on ,
+  colormap = list() # a dictionary to hold mappings
+  for (colortuple in colortuples) {
+    # tuples now say for instance "NBH:#00CC00"
+    mapping = strsplit(colortuple,":")[[1]] # split on :
+    colorbyval = mapping[1] # e.g. "NBH"
+    color = mapping[2] # e.g. "#00CC00"
+    colormap[[colorbyval]] = color
+  }
+  getcolor = function(userows) {
+    colorbyval = unique(metadata[userows,colorby])
+    current_color = colormap[[colorbyval]]
+    return (current_color)
+  }
+}
+
+
+# convert back and forth between rgb integers and hex color strings
+hex_to_rgb = function(hexcolor) {
+  red = strtoi(substr(hexcolor,2,3),base=16)
+  green = strtoi(substr(hexcolor,4,5),base=16)
+  blue = strtoi(substr(hexcolor,6,7),base=16)
+  return (c(red,green,blue))  
+}
+rgb_to_hex = function(rgbvector) {
+  hexcolor = toupper(paste("#",paste(sprintf("%02x",rgbvector),collapse=""),sep=""))
+  return (hexcolor)
+}
+
+# fade a color by a proportion from 0 to 1. 0 is no change, 1 results in white.
+fadecolor = function(hexcolor, fadeamount) {
+  white = c(255,255,255)
+  rgbvector = hex_to_rgb(hexcolor)
+  newrgb = floor(rgbvector + fadeamount*(white - rgbvector))
+  newhex = rgb_to_hex(newrgb)
+  return (newhex)
 }
 
 # figure out grayscale levels for serial dilutions
 dil_log10 = -log10(metadata[,fadeby])
 dil_range = range(dil_log10,na.rm=TRUE)
-desired_range_gray = c(0,255*.8) # dilution colors will range from #000 to #CCC
+desired_range_gray = c(0,.8) # never fade more than 80%, for legibility
 desired_range_cex = c(.3,1)
-graylevel = round((dil_log10 - min(dil_range))/(max(dil_range) - min(dil_range)) * (max(desired_range_gray) - min(desired_range_gray)))
+graylevel = (dil_log10 - min(dil_range))/(max(dil_range) - min(dil_range)) * (max(desired_range_gray) - min(desired_range_gray))
 cexlevel = (dil_log10 - min(dil_range))/(max(dil_range) - min(dil_range))* (max(desired_range_cex) - min(desired_range_cex)) + min(desired_range_cex)
 
 # columns for which separate curves should never be plotted
@@ -174,19 +213,12 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
     userows = metadata$used & plotbyval==current_plotbyval & curvename==current_curvename
     # calculate the y values by averaging those rows
     yvals = colMeans(mat[userows,])
-    # figure out what color to plot
-    current_colorbyval = unique(metadata[userows,colorby])
-    # figure out what dilution this is
+    # figure out what base color this curve ought to be
+    curve_basecolor = getcolor(userows)
+    # figure out what fade level (usually dilution) this is
     current_graylevel = unique(graylevel[userows])
-    if (current_colorbyval=="NBH") {
-      curve_hexcolor = "#00CC00" # green
-#      rgb_multiplier = c(0,1,0) # green scale
-    } else {
-      rgb_multiplier = c(1,1,1) # gray scale
-      curve_rgb = round(rgb_multiplier * current_graylevel)
-      curve_rgb[is.na(curve_rgb)] = 0 # fix in case there are NA
-      curve_hexcolor = paste("#",paste(sprintf("%02x",curve_rgb),collapse=""),sep="")
-    }
+    # calculate the color for this curve
+    curve_hexcolor = fadecolor(curve_basecolor,current_graylevel)
     points(timepts_h,yvals,type='l',lwd=3,col=curve_hexcolor)
 #    text(timepts[length(timepts)],curvedata[length(curvedata)],label=curve,col=color,pos=4,cex=.8)
     legend = rbind(legend,cbind(current_curvename,curve_hexcolor))
