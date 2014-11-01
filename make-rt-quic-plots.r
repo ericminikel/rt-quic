@@ -12,6 +12,8 @@ option_list = list(
               type='character', help="Path to CSV of platereader data"),
   make_option(c("-m", "--metafile"), action="store", default='',
               type='character', help="Path to metadata file"),
+  make_option(c("-t", "--maintitle"), action="store", default='',
+              type='character', help="Main title of all plots [defaults generated automatically]"),
   make_option(c("-q", "--rtquicno"), action="store", default='',
               type='character', help="RT-QuIC plate number"),
   make_option(c("-o", "--outdir"), action="store", default=NULL,
@@ -197,10 +199,15 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
   legend = data.frame(name=character(),color=character())
   pngname = gsub("[/ ]","-",paste(pngbase,"-",current_plotbyval,".png",sep=""))
   list_of_attributes = paste(plotby,": ",unique(metadata[metadata$used & plotbyval==current_plotbyval,plotby]),collapse="\n",sep="")
-  main = paste(pngbase,"\n",list_of_attributes,sep="")
+  if (opt$maintitle=="") {
+        main = paste(pngbase,"\n",list_of_attributes,sep="") 
+  } else {
+        main = gsub("\\n","\n",opt$maintitle,fixed=TRUE) # for some reason newlines come through still escaped. fix that here.
+  }
+
   png(paste(outdir,pngname,sep=""),width=600,height=450)
   plot(NA,NA,xlim=range(timepts_h),ylim=ylims,
-       xlab='Timepoint', ylab='Relative ThT fluorescence units',
+       xlab='Hours', ylab='Relative ThT fluorescence units',
        main=main)
   # within the data to be plotted, any metadata cols which are polymorphic must be 
   # separate curves, unless otherwise specified by user
@@ -237,7 +244,7 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
 #    text(timepts[length(timepts)],curvedata[length(curvedata)],label=curve,col=color,pos=4,cex=.8)
     legend = rbind(legend,cbind(current_curvename,curve_hexcolor))
   }
-  legend(opt$location,legend[,1],col=legend[,2],lwd=2,title=curveby)
+  legend(opt$location,legend[,1],col=legend[,2],lwd=2)#,title=as.character(curveby))
   dev.off()
 }
 
