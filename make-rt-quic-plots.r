@@ -36,10 +36,13 @@ option_list = list(
 opt = parse_args(OptionParser(option_list=option_list))
 
 # uncomment this for debugging in interactive mode:
-# opt = data.frame(rtquicno="rtq00001",
+# opt = data.frame(rtquicno="rtq00010",
 #                  outdir="~/d/sci/src/rt-quic/",
-#                  plotby="compound",
-#                  fadeby="dilution",
+#                  plotby="seed,dilution",
+#                  fadeby="compound_molarity",
+#                  colorby="",
+#                  colormap="#AA7700",
+#                  maintitle="",
 #                  normalize=TRUE,
 #                  location="topleft")
 
@@ -233,7 +236,7 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
     # figure out which rows to average for this curve
     userows = metadata$used & plotbyval==current_plotbyval & curvename==current_curvename
     # calculate the y values by averaging those rows
-    yvals = colMeans(mat[userows,])
+    yvals = colMeans(matrix(mat[userows,],nrow=sum(userows),ncol=ncol(mat)))
     # figure out what base color this curve ought to be
     curve_basecolor = getcolor(userows)
     # figure out what fade level (usually dilution) this is
@@ -247,4 +250,3 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
   legend(opt$location,legend[,1],col=legend[,2],lwd=2)#,title=as.character(curveby))
   dev.off()
 }
-
