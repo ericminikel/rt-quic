@@ -17,7 +17,9 @@ option_list = list(
   make_option(c("-o", "--output"), action="store", default='',
               type='character', help="Path to create metadata CSV file"),
   make_option(c("-q", "--rtquicno"), action="store", default='',
-              type='character', help="RT-QuIC plate number")
+              type='character', help="RT-QuIC plate number"),
+  make_option(c("-s", "--size"), action="store", default=96,
+              type="integer", help="Plate size")
 )
 opt = parse_args(OptionParser(option_list=option_list))
 
@@ -36,13 +38,24 @@ exec = function(command) {
 
 metadata_dir = "~/d/j/cureffilab/data/rtq/"
 
+if (opt$size == 96) {
+  nrows = 8
+  ncols = 12
+} else if (opt$size == 384) {
+  nrows = 16
+  ncols = 24
+}
+
 # use letters directly as indices into plate rows
-A=1; B=2; C=3; D=4; E=5; F=6; G=7; H=8
+A=1; B=2; C=3; D=4; E=5; F=6; G=7; H=8; I=9; J=10; K=11; L=12; M=13; N=14; O=15; P=16;
+
+alphabet = c("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P")
+
 
 # name the wells of the plate
-rowname = matrix(rep(c("A","B","C","D","E","F","G","H"),12),nrow=8)
-colname = matrix(rep(1:12,each=8),nrow=8)
-wellname = matrix(paste(rowname,colname,sep=""),nrow=8)
+rowname = matrix(rep(alphabet[1:nrows],ncols),nrow=nrows)
+colname = matrix(rep(1:ncols,each=nrows),nrow=nrows)
+wellname = matrix(paste(rowname,colname,sep=""),nrow=nrows)
 
 # read commands from a file to create metadata
 commands = read.table(entryfile,comment.char="#",flush=TRUE)
@@ -51,7 +64,7 @@ colnames(commands) = c("var","equals","value")
 metadata_vars = unique(gsub("\\[","",str_extract(commands$var,".*\\[")))
 # create a matrix for each metadata variable
 for (metadata_var in metadata_vars) {
-    assign(metadata_var,matrix(nrow=8,ncol=12))
+    assign(metadata_var,matrix(nrow=nrows,ncol=ncols))
 }
 # now execute the slice assignments in the script
 source(entryfile)
