@@ -34,17 +34,17 @@ option_list = list(
               type='character', help="Mapping scheme for colors")
 )
 opt = parse_args(OptionParser(option_list=option_list))
-
-# uncomment this for debugging in interactive mode:
-# opt = data.frame(rtquicno="rtq00010",
+# 
+# # uncomment this for debugging in interactive mode:
+# opt = data.frame(rtquicno="rtq00019",
 #                  outdir="~/d/sci/src/rt-quic/",
-#                  plotby="seed,dilution",
+#                  plotby="seed,compound,dilution,solvent,solvent_conc",
 #                  fadeby="compound_molarity",
-#                  colorby="",
-#                  colormap="#AA7700",
+#                  colorby="compound",
+#                  colormap="none:#000000,IND24:#FF1100,cpd-b:#AA7700,anle138b:#55CC00",
 #                  maintitle="",
 #                  normalize=TRUE,
-#                  location="topleft")
+#                  location="bottomright")
 
 
 if (opt$rtquicno=="") {
@@ -247,6 +247,8 @@ for (current_plotbyval in unique(plotbyval[metadata$used])) {
 #    text(timepts[length(timepts)],curvedata[length(curvedata)],label=curve,col=color,pos=4,cex=.8)
     legend = rbind(legend,cbind(current_curvename,curve_hexcolor))
   }
-  legend(opt$location,legend[,1],col=legend[,2],lwd=2)#,title=as.character(curveby))
+  colorvec = sapply(colormap,"[[",1)
+  legend(opt$location,names(colorvec),col=colorvec,lwd=2)#,title=as.character(curveby))
   dev.off()
 }
+
