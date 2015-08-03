@@ -180,10 +180,18 @@ wait_for_user = function() {
 }
 
 rtquic_kinetic_curves = function(metadata, mat, to_plot, curve_by, legend_df, type='l', lwd=5, ...) {
-  curve_ids = apply(metadata[,curve_by], 1, FUN="paste", collapse='_')
+  if (length(curve_by)==1) { # if just one column, use that
+    curve_ids = as.character(metadata[,curve_by])
+  } else { # otherwise paste them together
+    curve_ids = apply(metadata[,curve_by], 1, FUN="paste", collapse='_')
+  }
   for (uid in unique(curve_ids[to_plot])) {
     to_plot_this_curve = to_plot & curve_ids == uid
-    ydata = colMeans(mat[to_plot_this_curve,]) # average of replicates
+    if (sum(to_plot_this_curve) > 1) { # if >1 replicate take average of replicates
+      ydata = colMeans(mat[to_plot_this_curve,]) 
+    } else { # if just 1 replicate, show that
+      ydata = as.numeric(mat[to_plot_this_curve,]) 
+    }
     xdata = as.numeric(colnames(mat)) # timepoints
     curve_color = unique(merge(metadata[to_plot_this_curve,], legend_df)$color)[1]
     points(x=xdata, y=ydata, col=curve_color, type=type, lwd=5, ...)
