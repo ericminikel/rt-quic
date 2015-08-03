@@ -68,19 +68,20 @@ percent = function(proportion,digits=2) {
   return ( gsub(' ','',paste(formatC(proportion*100, digits=digits, format='fg'),"%",sep="") ) )
 }
 
-find_t_up = function(mat, threshold=.5, max_out = TRUE) {
+find_t_up = function(mat, threshold=.5, max_out = TRUE, ignore=0) {
   timepts = as.numeric(colnames(mat))
+  min_time_index = min(which(timepts > ignore)) # e.g. if ignore = 2, take index of 1st timepoint after 2h
   max_time = max(timepts)
   t_up = numeric(dim(mat)[1])
   for (i in 1:dim(mat)[1]) {
-    if (max(mat[i,]) < threshold) {
+    if (max(mat[i,min_time_index:dim(mat)[2]]) <= threshold) {
       if (max_out) {
         t_up[i] = max_time
       } else {
         t_up[i] = Inf
       }
     } else {
-      t_up[i] = timepts[min(which(mat[i,] > threshold))]
+      t_up[i] = timepts[min(which(mat[i,min_time_index:dim(mat)[2]] >= threshold)) + min_time_index - 1]
     }
   }
   return (t_up)
